@@ -1,0 +1,112 @@
+# Your system. Expands to 'GNU/Linux' or 'Cygwin'
+SYSTEM = $(shell uname)
+
+# Module name
+MODULE=luasnmp
+
+# Lua Version to use:
+LV = 5.1
+V = $(subst .,,$(LV))
+
+# Debugging 1 or 0
+DEBUG = 1
+
+# Root of Lua Installation
+INSTALL_ROOT=/usr/local
+INSTALL_SHARE=$(INSTALL_ROOT)/share/lua/$(LV)
+INSTALL_LIB=$(INSTALL_ROOT)/lib/lua/$(LV)
+INSTALL_DOC=$(INSTALL_ROOT)/share/doc/$(MODULE)
+
+# Installation stuff
+INSTALL = install -p
+INSTALL_EXEC = $(INSTALL) -m 0755
+INSTALL_DATA = $(INSTALL) -m 0644
+INSTALL_COPY = cp -p -r
+
+# == YOU PROBABLY DO NOT NEED TO CHANGE ANYTHING BELOW  =======================
+
+# Platform specific differences
+#
+ifeq ($(SYSTEM), Cygwin)
+  # Lua installation
+  LUA = /usr/local
+  LUAINC=$(LUA)/include
+  LUABIN=$(LUA)/lua
+  LUALIB=$(LUA)/lib
+
+  # Cygwin: need to link against Lua libraries
+  EXT = dll
+  LIBS=-llua$(LV)
+
+else
+  ifeq ($(SYSTEM), Darwin)
+    # Lua installation
+    LUA = /usr/local
+    EXT = so
+    LIBDIR = /opt/local/lib
+    ifeq ($(LV), 5.3)
+       LUABIN=$(LUA)/bin/lua$V
+       LUAINC=$(LUA)/include/lua/$(LV)
+       LUALIB=$(LUA)/lib
+       LIBS=
+    else
+       LUABIN=$(LUA)/bin/lua$V
+       LUAINC=$(LUA)/include/lua/$(LV)
+       LUALIB=$(LUA)/lib/lua
+       LIBS=
+    endif
+    # net-snmp path - NetSNMP from MacPorts version 5.9
+    NETSNMP_CONFIG=/opt/local/bin/net-snmp-config
+    # net-snmp path - MacOs built-in NetSNMP version 5.6
+    # NETSNMP_CONFIG=/usr/bin/net-snmp-config
+  else
+    # Lua installation
+    LUA = /usr
+    LUAINC=$(LUA)/include/lua$(LV)
+    LUABIN=$(LUA)/bin/lua$(LV)
+    LUALIB=$(LUA)/lib
+    EXT = so
+    LIBS=
+    # net-snmp path
+    NETSNMP_CONFIG=/usr/bin/net-snmp-config
+  endif
+endif
+
+PLATFORM=-D$(SYSTEM)
+
+# Compat-5.1 location
+#DEFCOMPAT=-DLUA_COMPAT_ALL
+DEFCOMPAT=
+# Current Version of LuaSNMP
+VERSION=1.0.8
+
+# Targets
+LUASNMP_SO=snmp.$(EXT).$(VERSION)
+
+# Compiler and Linker
+DEF = -DUSE_SNMPTRAPD $(DEFCOMPAT) -DVERSION='"$(VERSION)"' -DSYSTEM='"$(SYSTEM)"' $(PLATFORM)
+NETSNMP_DEF =
+CC = gcc
+ifeq ($(DEBUG), 1)
+#  CFLAGS = $(DEF) $(shell net-snmp-config --cflags) -I$(LUAINC) -fPIC -Wall -ggdb
+  CFLAGS = $(DEF) $(shell $(NETSNMP_CONFIG) --cflags) -I$(LUAINC) -fPIC -Wall -ggdb
+else
+#  CFLAGS = $(DEF) $(shell net-snmp-config --cflags) -I$(LUAINC) -fPIC -Wall -O2
+  CFLAGS = $(DEF) $(shell $(NETSNMP_CONFIG) --cflags) -I$(LUAINC) -fPIC -Wall -O2
+endif
+ifeq (Darwin, $(SYSTEM))
+  LDFLAGS= $(OPT) -dynamiclib -undefined dynamic_lookup -L$(LUALIB) -L$(LIBDIR)
+else
+  LDFLAGS = $(shell $(NETSNMP_CONFIG) --ldflags) -O -shared -fPIC
+endif
+#LIBS += $(shell net-snmp-config --libs) -lcrypto
+LIBS += $(shell $(NETSNMP_CONFIG) --libs) -lcrypto
+LD = gcc
+
+# Distribution stuff
+EXPORTDIR = $(HOME)/exports
+DISTNAME = $(MODULE)-$(VERSION)
+DISTARCH = $(DISTNAME).tar.gz
+CVSMODULE = lua/lua-$(LV)/modules/$(MODULE)
+SVNMODULE = $(MODULE)-$(VERSION)
+

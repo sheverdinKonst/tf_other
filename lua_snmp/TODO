@@ -1,0 +1,14 @@
+
+LuaSNMP - TODO
+==============
+
+* General
+-  Use UNIX domain socket for communication between trapd.lua and
+   LuaSNMP. Wait for new luasocket for this.
+
+* Tests
+-  test SHA1 authentication 
+
+* Support of NET-SNMP's TLS and SSH transport layers.
+
+* Support of IPv6

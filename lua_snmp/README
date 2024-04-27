@@ -1,0 +1,275 @@
+
+LuaSNMP 
+=======
+
+
+* LuaSNMP
+  -------
+  
+  LuaSNMP is a binding to the netsnmp library.
+
+  LuaSNMP is basically an update to the LuaMan library developed by
+  Michele E. Lima and Ana Lucia de Moura (ana@telemidia.puc-rio.br).
+
+  LuaSNMP requires the net-snmp library version 5.6 or later. The netsnmp library
+  can be downloaded from 
+          http://sourceforge.net/projects/net-snmp/
+  See "* LuaSNMP under MS Windows" below for details on issues when using LuaSNMP
+  with Microsoft Windows.
+
+  You must have Lua version 5.1, 5.2 or 5.3 to use it.
+  Lua can be downloaded from its home page:
+	  http://www.tecgraf.puc-rio.br/lua/
+
+* Documentation
+  -------------
+
+  The original LuaMan documentation (up to version 2.3) can be reached
+  from its home page:
+	  http://www.telemidia.puc-rio.br/~ana/luaman/
+	
+  An updated documentation comes with the LuaSNMP distribution in the doc
+  sub-directory.
+	
+
+* Legal matters
+  -------------
+
+  LuaSNMP is licensed under the MIT license.
+
+
+* Installation
+  ------------
+
+  Note, that the makefile configuration defines Lua 5.2 as the default Lua version.
+  In order to build LuaSNMP for other Lua versions you either have to change
+  the variables V and LV in the makefile configuration file config or specify
+  the destined Lua version in the command line, e.g. make V=53 LV=5.3.
+
+  In order to build LuaSNMP on a Linux, Unix or Cygwin/Mingw based
+  POSIX like system:
+  
+
+  1. Make sure you have Lua (version 5.1 or later).
+
+  2. LuaSNMP comes with a makefile and a simple config file to adopt
+     the make process to your target system.
+
+     Compiler Flags:
+
+     USE_SNMPTRAPD
+	Use the netsnmp standard utility snmptrapd as trap-sink daemon.
+        See * Trap-sink Daemon below for details.
+
+  3. Configure the make environment
+
+     The file config adopts the make environment automatically to suit your
+     platform.
+
+  4. Compile the package
+
+     Type 
+	make or make LV=5.3 or make LV=5.1
+
+     If make succeeds you get for Linux/MacOS (Windows):
+
+     * a Lua extension library "snmp.so.1.0" (core.dll) in the src sub-directory.
+     * a copy "core.so" (core.dll) of the same Lua extension library in ./snmp
+
+  5. Type
+       make install or make LV=5.3 install or make LV=5.1 install
+
+     as user root in order to install all relevant
+     files in standard places. The directory /usr/local is the default
+     install prefix.
+
+
+     
+* Trap-sink Daemon
+  ----------------
+  LuaSNMP supports the following trap-sink daemons:
+
+  snmptrapd 
+
+     It is recommended to use this daemon, as it fully supports SNMP
+     INFORM requests. Add the following line to your
+     /etc/snmp/snmptrapd.conf file in order to get notified by 
+     snmptrapd:
+
+	  traphandle default PATH-TO-LUA/lua \
+	             PATH-TO-LUASNMP/trapd.lua [TRAPDPORT] [LOGFILE] [LOGLEVEL]
+
+     This instructs snmptrapd to execute the trapd.lua script, which will then
+     in fact notify your luasnmp session about traps and informs using standard
+     UDP datagrams on a user configurable port TRAPDPORT (6000 is used by default).
+     
+     Note, that 'trapd.lua' is a normal Lua script, that requires it's environment
+     correctly set, which typically happens by inheritance of the environment of the
+     shell that starts snmptrapd. In particular 'trapd.lua' requires the following
+     standard environment variables (examples):
+
+     For Lua 5.0:
+     LUA_INIT=@/usr/local/share/lua/5.0/compat-5.1.lua
+	Only required for Lua 5.0 as Lua 5.1 does not require compat-5.1.lua.
+
+     For Lua 5.1:
+     LUA_INIT="require 'luarocks.require'"
+        Let Lua find modules installed via luarocks.
+
+     LUA_PATH="./?.lua;./?/?.lua;/usr/local/share/lua/5.x/?.lua;/usr/local/share/lua/5.0/?/?.lua;/usr/local/share/lua/5.x/?/init.lua"
+	Tell Lua where to find Lua modules (required). Note that luarocks path
+	is not included here. With the corresponding setting of the LUA_INIT environment
+	variable modules are first searched in the luarocks module repository and
+	then inthe PATH given via LUA_PATH.
+
+     LUA_CPATH="./?.so;./l?.so;/usr/local/lib/lua/5.0/?.so;/usr/local/lib/lua/5.0/l?.so"
+	Tell Lua where to find C modules (required). See LUA_PATH concerning module
+	search order when luarocks is installed.
+
+     You may also want to write data from the last received trap into a logfile:
+     just provide the full path of the logfile as second argument.
+
+     The third argument defines the level of logging used. See module LuaLogging
+     for details.     
+
+     Note, that you have to set the compiler switch USE_SNMPTRAPD when
+     you compile the luasnmp package.
+
+
+* Trap log message format
+  ---------------------
+     In order to have the trapd.lua script work properly snmptrapfmt must be configured
+     with the following format setting:
+       SUBST=\#\ \
+       NODEFMT=ip
+       VARFMT="#[%s] %n (%t) : %v" 
+       LOGFMT="$x#$A#$e#$G#$S#$T$*"
+     This ensure that the log message can be interpreted by the trapd script.
+
+* Environment Variables
+  ---------------------
+
+  The following environment variables are needed for using LuaSNMP:
+
+  LUASNMP_TRAPDPORT: Defines the port number to use on UDB socket between
+                        snmptrapd and the trapd.lua script.
+  LUASNMP_TRAPDPORT: Defines the port used by trapd.lua to capture events
+                     from NET-SNMP's snmptrapd.
+  LUASNMP_MIBDIRS:   Directory to find extra MIBs for LuaSNMP usage. Same functionality as
+                     the MIBDIRS environment variable of NET-SNMP.
+  MIBDIRS:           LuaSNMP searches in the path given by MIBDIRS for MIBs.
+  SNMPCONFPATH:      LuaSNMP respects the standard NET-SNMP configuration path variable.
+
+  
+* NetSNMP configuration files
+  ---------------------------
+
+  NetSNMP uses a bunch of configuration files at various places. Here is a list of them
+  with some personal notes.
+
+  /etc/snmp/snmpd.conf 	  Main agent configuration containing site specific agent definitions
+  			  that do not contain any secrete information.
+			  (Note, that the temmplate file provided violates this recommendation,
+			  simply remove the createUser directives)
+			  template: etc/snmpd.conf
+
+  /var/lib/snmp/snmpd.conf	  Automatic generated configuration entries, mainly encrypted user
+  				  information
+			  	  template: none
+
+  /usr/share/snmp/snmpd.conf	User specific configuration: which user is allowed to work
+  				how on which part of the MIBtree (rwuser directive)
+				template: etc/share_snmpd.conf
+
+  /etc/snmp/snmp.conf	  Default User and Password. Eases SNMP3 commands.
+  			  template: etc/etc_snmp.conf
+
+  $(HOME)/.snmp/snmp.conf Defaults per user
+  			  template: etc/snmp.conf
+
+  
+* SNMPv3 Considerations
+  ---------------------
+
+  Generally, LuaSNMP has the same prerequisits as the NetSNMP library to get 
+  SNMP version 3 to work. Nevertheless, here are some useful hints to get the
+  test script test.lua into operation for version 3.
+
+  1. Copy the template configuration files:
+     etc/snmpd.conf    		to     /etc/snmpd.conf
+     etc/snmptrapd.conf		to     /etc/snmptrapd.conf
+       You should adopt/select the line configuring the trapd.lua script execution
+       to use the correct path to the Lua executable
+     etc/snmp.conf              to     $(HOME)/.snmp/snmp.conf
+
+  2. Stop the SNMP daemon.
+
+  3. Create SNMP v3 users using the net-snmp-config command as follows:
+     	    net-snmp-config --create-snmpv3-user -a "leuwer2006" leuwer
+     	    net-snmp-config --create-snmpv3-user -a "ronja2006" ronja
+     (The users shown are those used in test.lua.)
+
+     This adds createUser directives to /var/lib/snmpd.conf which are replaced
+     by encrypted keys during snmpd startup.
+     
+     If the way via net-snmp-config tool is missing or fails do it by hand and
+     add the following into /var/lib/snmp/snmpd.conf
+
+     createUser leuwer MD5 leuwer2006 DES leuwer2006
+     createUser ronja  MD5 ronja2006 DES ronja2006
+
+     You may choose SHA instead of MD5 and AES or AES128 instead of DES.    
+
+  4. Create a file /usr/share/snmp/snmpd.conf and add the following lines
+     rwuser leuwer
+     rwuser ronja
+     Note that the template named in 1) already contains these lines.
+
+  5. Start the SNMP daemon
+
+* LuaSNMP on MS Windows
+  ---------------------
+
+  - Compilation
+	LuaSNMP does not compile against the development files that come with
+    	the net-snmp installer package. It compiles without problems
+	against the configured and installed net-snmp 5.3.0.1 source package.
+
+  - Agents 
+	The provided test script test.lua works fine against the net-snmp agent
+	snmpd built under cygwin.
+	Read requests work fine against Microsoft's SNMP agent. I have taken no
+	effort so far to configure the agent for write-access as well.
+
+  - Trap Forwarding
+	Forwarding using the traphandle directive works fine for SNMP version 1,
+	version 2c and version 3. 
+
+  - MIB Loading
+    Neither snmpd nor the applications load default libs without setting the
+    MIBDIRS environment variable. At least this is what I observed in my net-snmp
+    installation und Cygwin. 
+    Workaround: Set MIBDIRS in your .bashrc file, e.g.:
+    	export MIBDIRS=/usr/local/share/snmp/mibs
+
+  - The distribution comes with a shell script etc/snmpdwin32.sh which automatically
+    installs / starts / stops /removes the daemons as Windows services. It also
+    cares for the correct environment in order to use Lua as language for the
+    trap handle script. The script currently doesn't configure the services to start
+    automatically during startup. Hence you will have to start them manually using
+       snmpdwin32.sh start
+
+  - The script etc/snmpdstart provides an alternative to windows services. It starts
+    the agent and the trap daemon as background processes.
+
+
+* Comments and bug reports
+  ------------------------
+
+  Please send your comments and bug reports to the Lua mailing list.
+
+April 2006 (Dec 2008, July 2009, March 2010, Jan 2016)
+
+Have fun.
+herbert.leuwer@gmx.de
+

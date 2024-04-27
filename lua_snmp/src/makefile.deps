@@ -1,0 +1,19 @@
+nm_snmp.o: nm_snmp.c /usr/include/lua5.1/lua.h \
+ /usr/include/lua5.1/luaconf.h /usr/include/lua5.1/lauxlib.h \
+ /usr/include/lua5.1/lua.h nm_snmp.h nm_snmpdefs.h nm_util.h snmp.h \
+ nm_varbind.h /usr/include/lua5.1/lua.h nm_trap.h nm_mib.h nm_mibdefs.h \
+ except.h nm_c64.h /usr/include/lua5.1/lauxlib.h
+nm_util.o: nm_util.c nm_snmpdefs.h nm_util.h snmp.h nm_varbind.h \
+ /usr/include/lua5.1/lua.h /usr/include/lua5.1/luaconf.h nm_c64.h \
+ /usr/include/lua5.1/lauxlib.h /usr/include/lua5.1/lua.h
+nm_trap.o: nm_trap.c nm_trap.h
+nm_mib.o: nm_mib.c /usr/include/lua5.1/lua.h \
+ /usr/include/lua5.1/luaconf.h /usr/include/lua5.1/lauxlib.h \
+ /usr/include/lua5.1/lua.h snmp.h nm_mib.h nm_util.h nm_varbind.h \
+ nm_mibdefs.h
+nm_c64.o: nm_c64.c /usr/include/lua5.1/lua.h \
+ /usr/include/lua5.1/luaconf.h /usr/include/lua5.1/lauxlib.h \
+ /usr/include/lua5.1/lua.h nm_c64.h
+except.o: except.c /usr/include/lua5.1/lua.h \
+ /usr/include/lua5.1/luaconf.h /usr/include/lua5.1/lauxlib.h \
+ /usr/include/lua5.1/lua.h except.h
